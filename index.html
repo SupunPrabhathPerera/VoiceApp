@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Biometric System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #004d99;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Voice Biometric System</h1>
+        <h2>Record and Verify Your Voice</h2>
+        
+        <h3>Authentication Recording</h3>
+        <button id="startRecordAuth">Start Authentication Recording</button>
+        <button id="stopRecordAuth" disabled>Stop Authentication Recording</button>
+        
+        <h3>Verification Recording</h3>
+        <button id="startRecordVerify">Start Verification Recording</button>
+        <button id="stopRecordVerify" disabled>Stop Verification Recording</button>
+        
+        <button id="upload" disabled>Upload and Verify</button>
+        <p id="status"></p>
+    </div>
+    
+    <script>
+        let mediaRecorderAuth, mediaRecorderVerify;
+        let audioChunksAuth = [], audioChunksVerify = [];
+        
+        async function startRecordingAuth() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorderAuth = new MediaRecorder(stream);
+            mediaRecorderAuth.ondataavailable = event => audioChunksAuth.push(event.data);
+            mediaRecorderAuth.start();
+            document.getElementById('startRecordAuth').disabled = true;
+            document.getElementById('stopRecordAuth').disabled = false;
+        }
+        
+        function stopRecordingAuth() {
+            mediaRecorderAuth.stop();
+            document.getElementById('startRecordAuth').disabled = false;
+            document.getElementById('stopRecordAuth').disabled = true;
+            if (audioChunksAuth.length > 0 && audioChunksVerify.length > 0) {
+                document.getElementById('upload').disabled = false;
+            }
+        }
+        
+        async function startRecordingVerify() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorderVerify = new MediaRecorder(stream);
+            mediaRecorderVerify.ondataavailable = event => audioChunksVerify.push(event.data);
+            mediaRecorderVerify.start();
+            document.getElementById('startRecordVerify').disabled = true;
+            document.getElementById('stopRecordVerify').disabled = false;
+        }
+        
+        function stopRecordingVerify() {
+            mediaRecorderVerify.stop();
+            document.getElementById('startRecordVerify').disabled = false;
+            document.getElementById('stopRecordVerify').disabled = true;
+            if (audioChunksAuth.length > 0 && audioChunksVerify.length > 0) {
+                document.getElementById('upload').disabled = false;
+            }
+        }
+
+        document.getElementById('startRecordAuth').addEventListener('click', startRecordingAuth);
+        document.getElementById('stopRecordAuth').addEventListener('click', stopRecordingAuth);
+        document.getElementById('startRecordVerify').addEventListener('click', startRecordingVerify);
+        document.getElementById('stopRecordVerify').addEventListener('click', stopRecordingVerify);
+
+        document.getElementById('upload').addEventListener('click', async () => {
+            const authBlob = new Blob(audioChunksAuth, { type: 'audio/wav' });
+            const verifyBlob = new Blob(audioChunksVerify, { type: 'audio/wav' });
+            
+            const formData = new FormData();
+            formData.append('auth_sample', authBlob, 'auth_sample.wav');
+            formData.append('verify_sample', verifyBlob, 'verify_sample.wav');
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('status').textContent = result.result || result.error;
+        });
+    </script>
+</body>
+</html>
