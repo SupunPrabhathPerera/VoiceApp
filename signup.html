@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #004ba8;
+            font-size: 24px;
+        }
+
+        label {
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: block;
+            color: #004ba8;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="date"]:focus {
+            border-color: #004ba8;
+            outline: none;
+        }
+
+        button {
+            display: inline-block;
+            width: 48%;
+            padding: 10px;
+            background-color: #004ba8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #003b8b;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        #result {
+            margin-top: 15px;
+            font-size: 14px;
+            color: green;
+        }
+
+        p {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        a {
+            text-decoration: none;
+            color: #004ba8;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Add responsiveness */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        async function startRecording() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const formData = new FormData();
+                formData.append('voice_sample', audioBlob, 'voice_sample.wav');
+                formData.append('full_name', document.getElementById('full_name').value);
+                formData.append('email', document.getElementById('email').value);
+                formData.append('dob', document.getElementById('dob').value);
+                formData.append('account_number', document.getElementById('account_number').value);
+
+                fetch('/signup', {
+                    method: 'POST',
+                    body: formData
+                }).then(response => {
+                    return response.text();
+                }).then(text => {
+                    document.getElementById('result').innerText = text;
+                });
+            };
+
+            mediaRecorder.start();
+            document.getElementById('status').innerText = "Recording...";
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            document.getElementById('status').innerText = "Stopped Recording.";
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Bank Account Sign Up</h1>
+        <form id="signupForm" method="post" enctype="multipart/form-data">
+            <label for="full_name">Full Name</label>
+            <input type="text" id="full_name" name="full_name" placeholder="John Doe" required>
+            
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="john.doe@example.com" required>
+            
+            <label for="dob">Date of Birth</label>
+            <input type="date" id="dob" name="dob" required>
+            
+            <label for="account_number">Bank Account Number</label>
+            <input type="text" id="account_number" name="account_number" placeholder="123456789" required>
+            
+            <button type="button" onclick="startRecording()">Start Recording</button>
+            <button type="button" onclick="stopRecording()">Stop Recording</button>
+
+            <p id="status">Status: Idle</p>
+            <p id="result"></p>
+        </form>
+        <p><a href="/">Back to Home</a></p>
+    </div>
+</body>
+</html>
