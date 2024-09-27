@@ -1,1 +1,60 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        async function startRecording() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const formData = new FormData();
+                formData.append('voice_sample', audioBlob, 'voice_sample.wav');
+                formData.append('email', document.getElementById('email').value);
+
+                fetch('/login', {
+                    method: 'POST',
+                    body: formData
+                }).then(response => {
+                    return response.text();
+                }).then(text => {
+                    document.getElementById('result').innerText = text;
+                });
+            };
+
+            mediaRecorder.start();
+            document.getElementById('status').innerText = "Recording...";
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            document.getElementById('status').innerText = "Stopped Recording.";
+        }
+    </script>
+</head>
+<body>
+    <h1>Login</h1>
+    <form id="loginForm" method="post" enctype="multipart/form-data">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+        
+        <button type="button" onclick="startRecording()">Start Recording</button>
+        <button type="button" onclick="stopRecording()">Stop Recording</button>
+        
+        <p id="status">Status: Idle</p>
+        <p id="result"></p>
+    </form>
+    <p><a href="/">Back to Home</a></p>
+</body>
+</html>
